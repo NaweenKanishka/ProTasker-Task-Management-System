@@ -1,0 +1,61 @@
+public partial class Dashboard : Form
+{
+    public Dashboard()
+    {
+        InitializeComponent();
+
+        this.MaximizeBox = false; // disables maximize button
+        this.MinimizeBox = true;  // enables minimize button
+        this.FormBorderStyle = FormBorderStyle.FixedSingle;
+
+    }
+
+    private void Dashboard_Load(object sender, EventArgs e)
+    {
+        LoadDashboard();
+
+        string username = Environment.UserName;
+        usenamelbl.Text = username;
+    }
+    private void addUserControls(UserControl usercontrol)
+    {
+        usercontrol.Dock = DockStyle.Fill;
+        guna2Panel2.Controls.Clear();
+        guna2Panel2.Controls.Add(usercontrol);
+        usercontrol.BringToFront();
+    }
+    private void guna2Button1_Click(object sender, EventArgs e)
+    {
+        Dashboardcontent DC = new Dashboardcontent();
+        addUserControls(DC);
+    }
+    private void LoadDashboard()
+    {
+        Dashboardcontent dashboardContent = new Dashboardcontent();
+        addUserControls(dashboardContent);
+    }
+
+    private void guna2Button2_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void guna2Button3_Click(object sender, EventArgs e)
+    {
+       TaskcreatingUC TaskcreatingUC = new TaskcreatingUC();
+       addUserControls(TaskcreatingUC);
+    }
+
+    private void guna2Button4_Click(object sender, EventArgs e)
+    {
+        TimetrackerUC TUC = new TimetrackerUC();
+        addUserControls(TUC);
+    }
+
+    private void guna2Button5_Click(object sender, EventArgs e)
+    {
+        this.Close();
+        Login login = new Login();
+        login.Show();
+    }
+}
