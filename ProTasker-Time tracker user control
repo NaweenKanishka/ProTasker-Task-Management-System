@@ -1,0 +1,78 @@
+public partial class TimetrackerUC : UserControl
+{
+    System.Timers.Timer timer;
+    int h = 0, m = 0, s = 0, ms = 0;
+
+    private void end_Click(object sender, EventArgs e)
+    {
+        timer.Stop();
+    }
+
+    private void reset_Click(object sender, EventArgs e)
+    {
+        timer.Stop();
+        h = m = s = ms = 0;
+        UpdateTimerLabel();
+    }
+
+    private void guna2HtmlLabel1_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void start_Click(object sender, EventArgs e)
+    {
+        timer.Start();
+    }
+
+    public TimetrackerUC()
+    {
+        InitializeComponent();
+    }
+
+    private void TimetrackerUC_Load(object sender, EventArgs e)
+    {
+        timer = new System.Timers.Timer();
+        timer.Interval = 10; // 10 milliseconds
+        timer.Elapsed += Timer_Elapsed;
+    }
+
+    private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+    {
+        ms++;
+        if (ms >= 100)
+        {
+            ms = 0;
+            s++;
+        }
+        if (s >= 60)
+        {
+            s = 0;
+            m++;
+        }
+        if (m >= 60)
+        {
+            m = 0;
+            h++;
+        }
+
+        // Use Invoke to safely update UI elements from another thread
+        if (this.InvokeRequired)
+        {
+            this.Invoke(new MethodInvoker(delegate {
+                UpdateTimerLabel();
+            }));
+        }
+        else
+        {
+            UpdateTimerLabel();
+        }
+    }
+
+    private void UpdateTimerLabel()
+    {
+        guna2HtmlLabel1.Text = $"{h:D2}:{m:D2}:{s:D2}:{ms:D2}";
+    }
+
+
+}
