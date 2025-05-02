@@ -1,0 +1,383 @@
+public partial class Dashboardcontent : UserControl
+{   // MySQL connection
+    string connectionString = "server=localhost;user id=root;password=;database=E2320152_final_project_db;";
+    public Dashboardcontent()
+    {
+        InitializeComponent();
+
+        guna2DataGridView1.AllowUserToAddRows = false;
+
+
+        guna2DataGridView1.EnableHeadersVisualStyles = false;
+        guna2DataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        guna2DataGridView1.DefaultCellStyle.SelectionBackColor = guna2DataGridView1.DefaultCellStyle.BackColor;
+        guna2DataGridView1.DefaultCellStyle.SelectionForeColor = guna2DataGridView1.DefaultCellStyle.ForeColor;
+        guna2DataGridView1.RowPrePaint += guna2DataGridView1_RowPrePaint;
+        
+
+    }
+
+    private void guna2DataGridView1_RowPrePaint(object sender, DataGridViewRowPrePaintEventArgs e)
+    {
+        if (guna2DataGridView1.Rows[e.RowIndex].Selected)
+        {
+            guna2DataGridView1.Rows[e.RowIndex].DefaultCellStyle.SelectionBackColor =
+                guna2DataGridView1.Rows[e.RowIndex].DefaultCellStyle.BackColor;
+
+            guna2DataGridView1.Rows[e.RowIndex].DefaultCellStyle.SelectionForeColor =
+                guna2DataGridView1.Rows[e.RowIndex].DefaultCellStyle.ForeColor;
+        }
+    }
+    private void Dashboardcontent_Load(object sender, EventArgs e)
+    {
+        try
+        {
+
+            guna2DataGridView1.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+            guna2DataGridView1.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
+
+
+            guna2DataGridView1.Rows.Clear();
+
+
+
+            // Create DataGridView columns
+            guna2DataGridView1.Columns.Add("tid", "ID");
+            guna2DataGridView1.Columns.Add("task_name", "Task");
+            guna2DataGridView1.Columns.Add("t_description", "Description");
+            guna2DataGridView1.Columns.Add("start_date", "Start Date");
+            guna2DataGridView1.Columns.Add("due_date", "Due Date");
+            guna2DataGridView1.Columns.Add("priority", "Priority");
+
+            guna2DataGridView1.Columns["t_description"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+
+            
+
+            // Edit Image Column
+            DataGridViewImageColumn editCol = new DataGridViewImageColumn();
+            editCol.Name = "Edit";
+            // editCol.ImageLayout = DataGridViewImageCellLayout.Zoom;
+             guna2DataGridView1.Columns.Add(editCol);
+
+            // Delete Image Column
+            DataGridViewImageColumn deleteCol = new DataGridViewImageColumn();
+            deleteCol.Name = "Done";
+            //deleteCol.ImageLayout = DataGridViewImageCellLayout.Zoom;
+            guna2DataGridView1.Columns.Add(deleteCol);
+
+            
+
+            guna2DataGridView1.RowTemplate.Height = 30;
+            guna2DataGridView1.Columns["Edit"].Width = 30;
+            guna2DataGridView1.Columns["Done"].Width = 30;
+
+
+            // Style
+            guna2DataGridView1.RowTemplate.Height = 40;
+            guna2DataGridView1.DefaultCellStyle.Font = new Font("Segoe UI", 10);
+            guna2DataGridView1.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+
+            guna2DataGridView1.Columns["tid"].Width = 50;
+            guna2DataGridView1.Columns["task_name"].Width = 120;
+            guna2DataGridView1.Columns["t_description"].Width = 250;
+            guna2DataGridView1.Columns["start_date"].Width = 100;
+            guna2DataGridView1.Columns["due_date"].Width = 100;
+            guna2DataGridView1.Columns["priority"].Width = 60;
+            guna2DataGridView1.Columns["Edit"].Width = 40;
+            guna2DataGridView1.Columns["Done"].Width = 60;
+
+            
+
+            // Load image once
+            Image editIcon = null;
+            Image deleteIcon = null;
+            try
+            {
+                editIcon = new Bitmap(Image.FromFile("pen.png"), new Size(24, 24));
+                deleteIcon = new Bitmap(Image.FromFile("check.png"), new Size(24, 24));
+            }
+            catch (FileNotFoundException ex)
+            {
+                MessageBox.Show("Image file not found: " + ex.Message);
+            }
+            foreach (DataGridViewRow row in guna2DataGridView1.Rows)
+            {
+                row.Cells["Edit"].Value = editIcon;
+                row.Cells["Done"].Value = deleteIcon;
+            }
+
+            guna2DataGridView1.Columns["t_description"].Width = 250;
+
+            // Load data from MySQL
+            // Load data from MySQL
+            try
+            {
+                try
+                {
+                    List<string> overdueTasks = new List<string>();
+
+                    using (MySqlConnection conn = new MySqlConnection(connectionString))
+                    {
+                        conn.Open();
+                        string query = "SELECT tid, task_name, t_description, start_date, due_date, priority FROM tasks";
+                        MySqlCommand cmd = new MySqlCommand(query, conn);
+                        MySqlDataReader reader = cmd.ExecuteReader();
+
+                        while (reader.Read())
+                        {
+                            string id = reader["tid"].ToString();
+                            string task_name = reader["task_name"].ToString();
+                            string t_description = reader["t_description"].ToString();
+                            string priority = reader["priority"].ToString();
+
+                            // Convert Start Date
+                            string startDate = reader["start_date"] != DBNull.Value
+                                ? Convert.ToDateTime(reader["start_date"]).ToString("yyyy-MM-dd")
+                                : string.Empty;
+
+                            // Convert Due Date
+                            string dueDate = reader["due_date"] != DBNull.Value
+                                ? Convert.ToDateTime(reader["due_date"]).ToString("yyyy-MM-dd")
+                                : string.Empty;
+
+                            // Skip empty or null rows
+                            if (string.IsNullOrWhiteSpace(task_name) || string.IsNullOrWhiteSpace(t_description))
+                            {
+                                continue;
+                            }
+
+                            // Add row
+                            int rowIndex = guna2DataGridView1.Rows.Add(id, task_name, t_description, startDate, dueDate, priority);
+                            guna2DataGridView1.Rows[rowIndex].Cells["Edit"].Value = editIcon;
+                            guna2DataGridView1.Rows[rowIndex].Cells["Done"].Value = deleteIcon;
+
+                            // Convert due date for comparison
+                            DateTime.TryParse(dueDate, out DateTime dueDateValue);
+
+                            // Priority coloring
+                            bool isOverdue = !string.IsNullOrWhiteSpace(dueDate) && dueDateValue.Date <= DateTime.Now.Date;
+
+                            if (isOverdue)
+                            {
+                                guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.BackColor = Color.Red;
+                                guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.ForeColor = Color.White;
+
+                                overdueTasks.Add(task_name + " (ID: " + id + ", Due: " + dueDate + ")");
+                            }
+                            else
+                            {
+                                switch (priority.ToLower())
+                                {
+                                    case "high":
+                                        guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.BackColor = Color.FromArgb(204, 153, 255); // Light red
+                                        guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.ForeColor = Color.White;
+                                        break;
+
+                                    case "medium":
+                                        guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.BackColor = Color.FromArgb(255, 204, 102); // Orange
+                                        guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.ForeColor = Color.Black;
+                                        break;
+
+                                    case "low":
+                                        guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.BackColor = Color.FromArgb(153, 255, 153); // Light green
+                                        guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.ForeColor = Color.Black;
+                                        break;
+
+                                    default:
+                                        guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.BackColor = Color.White;
+                                        guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.ForeColor = Color.Black;
+                                        break;
+                                }
+                            }
+                        }
+
+
+                        reader.Close();
+                    }
+
+                    // Show one message box after loading all overdue tasks
+                    if (overdueTasks.Count > 0)
+                    {
+                        MessageBox.Show("⚠ Overdue tasks:\n\n" + string.Join("\n", overdueTasks), "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message);
+        }
+    }
+
+    
+
+    private void guna2DataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex >= 0)
+        {
+            if (guna2DataGridView1.Columns[e.ColumnIndex].Name == "Edit")
+            {
+                try
+                {
+                    string taskId = guna2DataGridView1.Rows[e.RowIndex].Cells["tid"].Value.ToString();
+                    string taskName = guna2DataGridView1.Rows[e.RowIndex].Cells["task_name"].Value.ToString();
+                    string description = guna2DataGridView1.Rows[e.RowIndex].Cells["t_description"].Value.ToString();
+                    string startDate = guna2DataGridView1.Rows[e.RowIndex].Cells["start_date"].Value.ToString();
+                    string dueDate = guna2DataGridView1.Rows[e.RowIndex].Cells["due_date"].Value.ToString();
+                    string priority = guna2DataGridView1.Rows[e.RowIndex].Cells["priority"].Value.ToString();
+
+                    // Create and show the EditTaskForm
+                    EditTaskForm editForm = new EditTaskForm(taskId, taskName, description, startDate, dueDate, priority);
+                    editForm.ShowDialog();  // Show the form as a dialog to block interaction with the parent form until it's closed
+                }
+                catch (Exception ex) { MessageBox.Show("Error deleting task: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+                
+            }
+            else if (guna2DataGridView1.Columns[e.ColumnIndex].Name == "Done")
+            {
+                DialogResult result = MessageBox.Show(
+                     "Are you sure you want to delete this task?",
+                     "Confirm Delete",
+                     MessageBoxButtons.YesNo,
+                     MessageBoxIcon.Warning
+                );
+
+                if (result == DialogResult.Yes)
+                {
+                    string taskId = guna2DataGridView1.Rows[e.RowIndex].Cells["tid"].Value.ToString();
+
+                    try
+                    {
+                        using (MySqlConnection con = new MySqlConnection(connectionString))
+                        {
+                            con.Open();
+                            string query = "DELETE FROM tasks WHERE tid = @tid";
+                            MySqlCommand cmd = new MySqlCommand(query, con);
+                            cmd.Parameters.AddWithValue("@tid", taskId);
+
+                            int rowsAffected = cmd.ExecuteNonQuery();
+                            if (rowsAffected > 0)
+                            {
+                                guna2DataGridView1.Rows.RemoveAt(e.RowIndex);
+                                MessageBox.Show("Task deleted successfully.", "Deleted", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                            else
+                            {
+                                MessageBox.Show("Task not found or already deleted.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error deleting task: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+    }
+
+    private void guna2HtmlLabel7_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void guna2HtmlLabel8_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void guna2Separator1_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void guna2TextBox1_TextChanged(object sender, EventArgs e)
+    {
+
+    }
+
+    private void find_Click(object sender, EventArgs e)
+    {
+        string keyword = guna2TextBox1.Text.Trim(); // Get text from your input field
+
+        if (string.IsNullOrEmpty(keyword))
+        {
+            MessageBox.Show("Please enter a task name or due date to search.");
+            return;
+        }
+
+        guna2DataGridView1.Rows.Clear(); // Clear existing rows
+
+        try
+        {
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                string query = @"SELECT tid, task_name, t_description, start_date, due_date, priority 
+                         FROM tasks 
+                         WHERE task_name LIKE @keyword OR due_date LIKE @keyword";
+
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@keyword", "%" + keyword + "%");
+
+                MySqlDataReader reader = cmd.ExecuteReader();
+
+                // Load image icons again
+                Image editIcon = new Bitmap(Image.FromFile("pen.png"), new Size(24, 24));
+                Image deleteIcon = new Bitmap(Image.FromFile("check.png"), new Size(24, 24));
+
+                while (reader.Read())
+                {
+                    string id = reader["tid"].ToString();
+                    string taskName = reader["task_name"].ToString();
+                    string description = reader["t_description"].ToString();
+                    string startDate = Convert.ToDateTime(reader["start_date"]).ToString("yyyy-MM-dd");
+                    string dueDate = Convert.ToDateTime(reader["due_date"]).ToString("yyyy-MM-dd");
+                    string priority = reader["priority"].ToString();
+
+                    int rowIndex = guna2DataGridView1.Rows.Add(id, taskName, description, startDate, dueDate, priority);
+                    guna2DataGridView1.Rows[rowIndex].Cells["Edit"].Value = editIcon;
+                    guna2DataGridView1.Rows[rowIndex].Cells["Done"].Value = deleteIcon;
+
+                    // Apply color styles based on priority
+                    switch (priority.ToLower())
+                    {
+                        case "high":
+                            guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.BackColor = Color.FromArgb(204, 153, 255);
+                            guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.ForeColor = Color.White;
+                            break;
+                        case "medium":
+                            guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.BackColor = Color.FromArgb(255, 204, 102);
+                            guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.ForeColor = Color.Black;
+                            break;
+                        case "low":
+                            guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.BackColor = Color.FromArgb(153, 255, 153);
+                            guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.ForeColor = Color.Black;
+                            break;
+                        default:
+                            guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.BackColor = Color.White;
+                            guna2DataGridView1.Rows[rowIndex].DefaultCellStyle.ForeColor = Color.Black;
+                            break;
+                    }
+                }
+
+                reader.Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Error: " + ex.Message);
+        }
+    }
+}
